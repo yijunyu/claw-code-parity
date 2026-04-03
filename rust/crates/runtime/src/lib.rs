@@ -17,6 +17,7 @@ pub mod sandbox;
 mod session;
 mod sse;
 mod usage;
+pub mod wrappers;
 
 pub use bash::{execute_bash, BashCommandInput, BashCommandOutput};
 pub use bootstrap::{BootstrapPhase, BootstrapPlan};
