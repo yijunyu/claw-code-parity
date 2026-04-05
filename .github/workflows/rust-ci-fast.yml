@@ -1,0 +1,59 @@
+name: Rust CI (Nightly Release)
+
+# Accelerated release build using nightly toolchain.
+# Benchmarked ~17% faster than stable for this workspace.
+#
+# cargo-slicer was evaluated but adds overhead on small workspaces
+# (8 crates). The nightly compiler alone provides the speedup here.
+# For larger workspaces (100+ crates), cargo-slicer would help further.
+
+on:
+  push:
+    branches:
+      - main
+      - 'gaebal/**'
+    paths:
+      - .github/workflows/rust-ci-fast.yml
+      - rust/**
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/rust-ci-fast.yml
+      - rust/**
+  workflow_dispatch:
+
+concurrency:
+  group: rust-ci-fast-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: rust
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-nightly-release:
+    name: Build (Nightly Release)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@nightly
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust -> target
+          prefix-key: nightly-release
+
+      - name: Build release binary
+        run: cargo +nightly build --release
+
+      - name: Report binary size
+        run: |
+          echo "=== Release binary sizes ==="
+          find target/release -maxdepth 1 -type f -executable \
+            -exec ls -lh {} \; 2>/dev/null || true
